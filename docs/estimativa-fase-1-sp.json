@@ -1,0 +1,60 @@
+{
+	"Nome": "My Estimate",
+	"Custo total": {
+		"mensal": "107.65",
+		"Pagamento adiantado": "0.00",
+		"12 meses": "1291.80"
+	},
+	"Metadados": {
+		"Moeda": "USD",
+		"Localidade": "pt_BR",
+		"Criado em": "9/1/2026",
+		"Isenção de responsabilidade legal": "A Calculadora de Preços da AWS fornece apenas uma estimativa de suas taxas da AWS e não inclui nenhuma taxa aplicável. Suas taxas reais dependem de vários fatores, inclusive de seu uso real dos serviços da AWS.",
+		"Compartilhar URL": "https://calculator.aws/#/estimate?id=64ccbc1e1057357bc1dc88a10a028a4d2f7cea00"
+	},
+	"Grupos": {
+		"Serviços": [
+			{
+				"Nome do serviço": "Amazon EC2 ",
+				"Região": "América do Sul (São Paulo)",
+				"Status": "",
+				"Custo do serviço": {
+					"mensal": "13.48",
+					"Pagamento adiantado": "0.00",
+					"12 meses": "161.81"
+				},
+				"Propriedades": {
+					"Locação": "Instâncias compartilhadas",
+					"Sistema operacional": "Linux",
+					"Carga de trabalho": "Consistent, Número de instâncias: 1",
+					"Instância do EC2 avançada": "t3.micro",
+					"Pricing strategy": "On-Demand Utilization: 100 %Utilized/Month",
+					"Habilitar monitoramento": "desabilitada",
+					"EBS Quantidade de armazenamento": "8 GB",
+					"DT Entrada: Not selected": "0 TB por mês",
+					"DT Saída: Not selected": "0 TB por mês",
+					"DT Intrarregião:": "0 TB por mês"
+				}
+			},
+			{
+				"Nome do serviço": "Amazon RDS for PostgreSQL",
+				"Região": "América do Sul (São Paulo)",
+				"Status": "",
+				"Custo do serviço": {
+					"mensal": "94.17",
+					"Pagamento adiantado": "0.00",
+					"12 meses": "1130.04"
+				},
+				"Propriedades": {
+					"Quantidade de armazenamento": "20 GB",
+					"Volume de armazenamento": "SSD de uso geral (gp3)",
+					"Nós": "1",
+					"Tipo de instância": "db.t3.micro",
+					"Utilização (somente sob demanda)": "100 %Utilized/Month",
+					"Opção de implantação": "Single-AZ",
+					"Modelo de preço": "OnDemand"
+				}
+			}
+		]
+	}
+}
