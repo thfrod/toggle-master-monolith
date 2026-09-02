@@ -35,6 +35,14 @@ A aplicação monolítica `toggle-master-monolith` foi executada localmente via 
 | Processo da app | `systemd` (`togglemaster.service`), não foreground de SSH |
 | Provisionamento | AWS CLI, a partir de um usuário IAM dedicado (`togglemaster-cli`, não root) |
 
+## Estimativa de custos AWS 
+
+##### Estimativa de custo — sa-east-1 (São Paulo)
+![sa-east-1](estimativa-sp.png)
+
+##### Estimativa de custo — us-east-1 (N. da Virgínia)
+![alt text](estimativa-virginia.png)
+
 ## Validação (executada de fora da AWS, via IP público)
 
 ```
