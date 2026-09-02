@@ -15,7 +15,7 @@
 | Diagrama de arquitetura | https://claude.ai/code/artifact/7876d085-66fd-46ad-a08b-6fbb79aead41 |
 | Estimativa de custo — sa-east-1 (São Paulo) | https://calculator.aws/#/estimate?id=64ccbc1e1057357bc1dc88a10a028a4d2f7cea00 |
 | Estimativa de custo — us-east-1 (N. da Virgínia), região escolhida | https://calculator.aws/#/estimate?id=587162758a89feffe6299186aeac1fd6c3f3493e |
-| Vídeo de demonstração | [Preencher após gravação] |
+| Vídeo de demonstração | https://www.youtube.com/watch?v=LdXnWIv7mvA |
 | Repositório | https://github.com/dougls/toggle-master-monolith |
 
 ## Resumo executivo
