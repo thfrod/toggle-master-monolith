@@ -1,32 +1,129 @@
+name: togglemaster-fase2
+
 services:
-  app:
-    build: .
+  auth-service:
+    build: ./services/auth-service
     ports:
-      - "5050:5000"
-    volumes:
-      - .:/app
+      - "8081:8080"
     environment:
-      - DB_HOST=db
-      - DB_NAME=togglemaster
-      - DB_USER=user
-      - DB_PASSWORD=password
-      - DB_PORT=5432
+      PORT: "8080"
+      AUTH_DATABASE_URL: postgres://user:password@postgres-auth:5432/auth?sslmode=disable
     depends_on:
-      db:
+      postgres-auth:
         condition: service_healthy
-  db:
-    image: postgres:13
+    restart: unless-stopped
+
+  flag-service:
+    build: ./services/flag-service
+    ports:
+      - "8082:8080"
     environment:
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=togglemaster
+      FLAGS_DATABASE_URL: postgres://user:password@postgres-flags:5432/flags?sslmode=disable
+    depends_on:
+      postgres-flags:
+        condition: service_healthy
+    restart: unless-stopped
+
+  targeting-service:
+    build: ./services/targeting-service
+    ports:
+      - "8083:8080"
+    environment:
+      TARGETING_DATABASE_URL: postgres://user:password@postgres-flags:5432/flags?sslmode=disable
+    depends_on:
+      postgres-flags:
+        condition: service_healthy
+    restart: unless-stopped
+
+  evaluation-service:
+    build: ./services/evaluation-service
+    ports:
+      - "8084:8080"
+    environment:
+      PORT: "8080"
+      REDIS_ADDR: redis:6379
+      FLAG_SERVICE_URL: http://flag-service:8080
+      TARGETING_SERVICE_URL: http://targeting-service:8080
+      EVENT_BUS_DRIVER: redis
+      REDIS_QUEUE_KEY: analytics-events
+      EVALUATION_WORK_MS: "0"
+    depends_on:
+      flag-service:
+        condition: service_started
+      targeting-service:
+        condition: service_started
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+
+  analytics-service:
+    build: ./services/analytics-service
+    ports:
+      - "8085:8080"
+    environment:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: dummy
+      AWS_SECRET_ACCESS_KEY: dummy
+      DYNAMODB_ENDPOINT_URL: http://dynamodb-local:8000
+      ANALYTICS_TABLE: togglemaster-analytics
+      EVENT_BUS_DRIVER: redis
+      REDIS_ADDR: redis:6379
+      REDIS_QUEUE_KEY: analytics-events
+    depends_on:
+      redis:
+        condition: service_healthy
+      dynamodb-local:
+        condition: service_started
+    restart: unless-stopped
+
+  postgres-auth:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: auth
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_auth_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d togglemaster"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U user -d auth"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 12
+    restart: unless-stopped
+
+  postgres-flags:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: flags
+    volumes:
+      - postgres_flags_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d flags"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-inMemory"]
+    restart: unless-stopped
 
 volumes:
-  postgres_data:
+  postgres_auth_data:
+  postgres_flags_data:
+  redis_data:
