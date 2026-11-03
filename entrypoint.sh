@@ -33,5 +33,5 @@ if command -v flask >/dev/null 2>&1; then
 fi
 
 # Inicia a aplicação principal (Gunicorn)
-echo "Iniciando o servidor Gunicorn..."
-exec gunicorn --bind 0.0.0.0:5000 app:app
+echo "Iniciando o servidor Gunicorn na porta ${PORT:-5000}..."
+exec gunicorn --bind "0.0.0.0:${PORT:-5000}" app:app

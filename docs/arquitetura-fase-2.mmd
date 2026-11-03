@@ -1,0 +1,66 @@
+flowchart TB
+    client[Cliente / Postman / curl] --> ingress
+
+    subgraph AWS[Região AWS us-east-1]
+      subgraph VPC[VPC 10.0.0.0/16]
+        ingress[Nginx Ingress + Load Balancer]
+
+        subgraph AZA[Availability Zone us-east-1a]
+          pubA[Public subnet 10.0.1.0/24<br/>Load Balancer]
+          appA[Private workload subnet 10.0.11.0/24<br/>EKS managed nodes]
+          dataA[Private data subnet 10.0.21.0/24<br/>RDS / ElastiCache]
+        end
+
+        subgraph AZB[Availability Zone us-east-1b]
+          pubB[Public subnet 10.0.2.0/24<br/>Load Balancer]
+          appB[Private workload subnet 10.0.12.0/24<br/>EKS managed nodes]
+          dataB[Private data subnet 10.0.22.0/24<br/>RDS / ElastiCache]
+        end
+
+        ingress --> appA
+        ingress --> appB
+        appA --> dataA
+        appB --> dataB
+        appA -. failover .-> appB
+        appB -. failover .-> appA
+      end
+
+      subgraph EKS[EKS / namespace togglemaster]
+        auth[auth-service]
+        flags[flag-service]
+        targeting[targeting-service]
+        evaluation[evaluation-service]
+        analytics[analytics-service]
+        auth --> flags
+        evaluation --> flags
+        evaluation --> targeting
+        evaluation --> analytics
+      end
+
+      rdsAuth[(RDS PostgreSQL auth)]
+      rdsFlags[(RDS PostgreSQL flags)]
+      rdsTarget[(RDS PostgreSQL targeting)]
+      redis[(ElastiCache Redis)]
+      sqs[[SQS Standard queue]]
+      dynamo[(DynamoDB analytics)]
+      secrets[(Secrets Manager)]
+      endpoints[VPC endpoints / NAT para ECR, CloudWatch e serviços AWS]
+    end
+
+    auth --> rdsAuth
+    flags --> rdsFlags
+    targeting --> rdsTarget
+    evaluation --> redis
+    evaluation --> sqs
+    sqs --> analytics
+    analytics --> dynamo
+    secrets -. External Secrets / IRSA .-> EKS
+    endpoints --> appA
+    endpoints --> appB
+
+    classDef public fill:#dbeafe,stroke:#2563eb,color:#111827
+    classDef private fill:#dcfce7,stroke:#16a34a,color:#111827
+    classDef data fill:#fef3c7,stroke:#d97706,color:#111827
+    class pubA,pubB,ingress public
+    class appA,appB,auth,flags,targeting,evaluation,analytics private
+    class dataA,dataB,rdsAuth,rdsFlags,rdsTarget,redis,dynamo,secrets,sqs data

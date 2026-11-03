@@ -1,0 +1,15 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: togglemaster
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - configmap.yaml
+  - deployment-auth.yaml
+  - deployment-flag.yaml
+  - deployment-targeting.yaml
+  - deployment-evaluation.yaml
+  - deployment-analytics.yaml
+  - services.yaml
+  - ingress.yaml
+  - hpa.yaml

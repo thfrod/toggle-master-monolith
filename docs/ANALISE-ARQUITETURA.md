@@ -15,7 +15,7 @@ Um monolito é uma **única unidade implantável** que empacota a camada de API,
 - **Um banco de dados, acoplado diretamente.** `get_db_connection()` (`app.py:14`) abre uma conexão `psycopg2` direto do handler da rota para uma única instância Postgres. Não existe fronteira de acesso a dados por trás da qual outra coisa poderia se esconder (um repositório, uma camada ORM, um serviço de dados separado).
 - **Um artefato de build.** O `Dockerfile` empacota tudo — código da app + dependências + entrypoint — em uma única imagem. Existe exatamente uma coisa para buildar, versionar e implantar.
 - **Uma unidade de runtime que escala como um todo.** `entrypoint.sh` inicia um único processo `gunicorn` servindo *todas* as rotas (`/health` e as quatro rotas de `/flags`). Para escalar, rodam-se mais cópias da app *inteira* — não é possível escalar "leitura de flags" independentemente de "escrita de flags".
-- **`docker-compose.yaml` confirma o formato:** exatamente dois serviços — `app` (o monolito) e `db`. Sem API gateway, sem message broker, sem workers independentes, sem serviços separados por capacidade.
+- **O `docker-compose.yaml` da linha de base da Fase 1 confirmava o formato:** exatamente dois serviços — `app` (o monolito) e `db`. Na Fase 2, esse arquivo foi substituído pelo Compose do ecossistema distribuído com 5 apps e 4 dependências locais.
 
 Essa é a definição clássica: um único codebase → um único build → um único deploy → uma única unidade de escala, com todas as camadas acopladas/compiladas juntas.
 
@@ -78,8 +78,8 @@ Sem estado de sessão, sem cache em memória, nada é mantido entre requisiçõe
 **II. Dependencies — quase ✅, uma inconsistência**
 `requirements.txt` fixa versões exatas e a imagem Docker isola essas dependências de forma limpa. A lacuna: o pacote de nível de sistema (`postgresql-client`, `Dockerfile:18`) também é declarado explicitamente — bom — mas o caminho manual de deploy no EC2 (README) reinstala tudo em um `venv` puro no host em vez de usar a imagem Docker, então "como as dependências são isoladas" difere entre os dois caminhos de deploy.
 
-**III. Config — ⚠️**
-Credenciais de banco feitas corretamente (via env). Mas **a porta está fixa em quatro lugares** — `app.py:143`, `Dockerfile:20` (`EXPOSE 5000`), `Dockerfile:23`/`entrypoint.sh:37` (`--bind 0.0.0.0:5000`) — em vez de ler uma variável `PORT`. `DB_PORT` é exigida por `entrypoint.sh`, mas nunca é de fato consumida por `get_db_connection()` em `app.py:14-21`, que silenciosamente cai para a porta padrão 5432 do Postgres. Para produção: ler `PORT` e `DB_PORT` do ambiente em todos os lugares, e gerenciar segredos via AWS Secrets Manager / SSM Parameter Store em vez de `export` manual numa sessão SSH (o próprio README já sinaliza isso como inseguro/efêmero).
+**III. Config — ⚠️ na linha de base da Fase 1; corrigido na evolução**
+Na versão original, a porta estava fixa e `DB_PORT` era exigida pelo `entrypoint.sh`, mas não era consumida por `get_db_connection()`. Essa lacuna foi corrigida no monólito legado (`PORT` e `DB_PORT`) e, na Fase 2, todas as conexões/portas/URLs são configuráveis por ambiente. O caminho de produção também passou a usar AWS Secrets Manager/External Secrets em vez de `export` manual numa sessão SSH.
 
 **V. Build, release, run — ⚠️ no Docker, ❌ no EC2 manual**
 O caminho Docker separa build (`docker build`) de run (`entrypoint.sh` → gunicorn) razoavelmente bem. O deploy manual no EC2 descrito no README **não separa nada**: `git clone` → `pip install` → `gunicorn` direto, sem artefato versionado, nada para o qual seria possível fazer rollback. Para produção: buildar um artefato versionado (imagem Docker publicada no ECR, ou uma AMI) e implantar esse artefato imutável em vez de mutar um host ao vivo.
@@ -130,3 +130,13 @@ Estimativa mensal para a arquitetura descrita acima — EC2 `t3.micro` (Linux, E
 - Código-fonte: `app.py`, `Dockerfile`, `docker-compose.yaml`, `entrypoint.sh`
 - 12-Factor App: https://12factor.net/pt_br/
 - Exports da AWS Pricing Calculator: `estimativa-fase-1.json` (sa-east-1), `estivativa-fase-1-us.json` (us-east-1)
+
+---
+
+## 4. Melhorias aplicadas após a correção da Fase 1
+
+As observações da banca foram incorporadas na implementação da Fase 2:
+
+1. **Diagrama completo de rede.** O novo diagrama em `docs/arquitetura-fase-2.mmd` representa explicitamente as duas subnets públicas do Load Balancer, as duas subnets privadas de workloads do EKS e as duas subnets privadas de dados de RDS/ElastiCache, uma de cada tipo em `us-east-1a` e `us-east-1b`. Isso deixa visível o uso real de cada AZ e evita o desenho simplificado que ocultava a subnet adicional exigida pelo DB Subnet Group.
+2. **12-Factor mais preciso.** A nova implementação usa configuração por ambiente (`PORT`, URLs, região e driver de fila), artefatos imutáveis no ECR, Deployments independentes, probes, requests/limits, logs em stdout e escalabilidade horizontal por serviço. O Compose local usa Redis como adaptador de fila; o ambiente AWS usa SQS sem alterar o contrato dos serviços.
+3. **Segredos gerenciados.** O caminho principal deixou de depender de `export` manual ou arquivos versionados: `k8s/aws/external-secret.yaml` lê o segredo JSON do AWS Secrets Manager por meio do External Secrets Operator e IRSA. O Secret Kubernetes é efêmero e gerado pelo operador. O arquivo base64 é mantido somente como fallback documentado para o AWS Academy, que pode não permitir roles adicionais.

@@ -2,6 +2,12 @@
 infra-ids.env
 *.env
 
+# Kubernetes secrets generated for a real cluster
+k8s/**/secret.yaml
+
+# Local PDF/rendering and test artifacts
+tmp/
+
 # Python
 __pycache__/
 *.pyc

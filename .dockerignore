@@ -1,0 +1,9 @@
+.git
+.gitignore
+__pycache__
+*.pyc
+tmp
+docs
+entregaveis
+infra
+k8s

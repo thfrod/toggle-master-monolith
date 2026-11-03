@@ -1,0 +1,23 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AnalyticsQueue",
+      "Effect": "Allow",
+      "Action": ["sqs:SendMessage", "sqs:ReceiveMessage", "sqs:DeleteMessage", "sqs:GetQueueAttributes"],
+      "Resource": "arn:aws:sqs:us-east-1:000000000000:togglemaster-analytics"
+    },
+    {
+      "Sid": "AnalyticsTable",
+      "Effect": "Allow",
+      "Action": ["dynamodb:DescribeTable", "dynamodb:PutItem", "dynamodb:Scan"],
+      "Resource": "arn:aws:dynamodb:us-east-1:000000000000:table/togglemaster-analytics"
+    },
+    {
+      "Sid": "ReadRuntimeSecret",
+      "Effect": "Allow",
+      "Action": ["secretsmanager:GetSecretValue"],
+      "Resource": "arn:aws:secretsmanager:us-east-1:000000000000:secret:togglemaster/fase2/runtime-*"
+    }
+  ]
+}
